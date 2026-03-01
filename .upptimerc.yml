@@ -1,21 +1,79 @@
 owner: djiovani-douglas
 repo: voxli-status
 
+# Boas práticas / robustez
+# (Deixe UTC para consistência; você pode trocar para America/Sao_Paulo se preferir.)
+timezone: Etc/UTC
+
+# Quem recebe issues/alerts gerados pelo Upptime (adicione usuários conforme necessário)
+assignees:
+  - djiovani-douglas
+
+# Sites monitorados
 sites:
   - name: Voxli Platform
     url: https://voxli.com.br
+    maxResponseTime: "8000"
   - name: Voxli Admin
     url: https://admin.voxli.com.br
+    maxResponseTime: "8000"
   - name: Voxli Portal
     url: https://voxli.voxli.com.br
+    maxResponseTime: "8000"
 
+# Status Page (branding)
 status-website:
   cname: status.voxli.com.br
   name: Voxli Status
-  introTitle: Status da Plataforma Voxli
-  introMessage: Monitoramento em tempo real da infraestrutura Voxli.
+  introTitle: "Status da Voxli"
+  introMessage: "Monitoramento em tempo real dos serviços e componentes críticos da plataforma."
+
   navbar:
     - title: Status
       href: /
     - title: Voxli
       href: https://voxli.com.br
+
+  # Tema base (o refinamento vem via CSS)
+  theme: light
+
+  # CSS custom (crie este arquivo no branch master)
+  css: https://raw.githubusercontent.com/djiovani-douglas/voxli-status/master/assets/status.css
+
+  # Branding (opcional — descomente quando tiver os arquivos)
+  # logoUrl: https://raw.githubusercontent.com/djiovani-douglas/voxli-status/master/assets/logo.svg
+  # favicon: https://raw.githubusercontent.com/djiovani-douglas/voxli-status/master/assets/favicon.png
+
+# Notificações (deixe vazio se não for usar agora)
+notifications: []
+
+# Templates de issues (incidentes)
+i18n:
+  activeIncidents: Incidentes ativos
+  pastIncidents: Incidentes anteriores
+  liveStatus: Status em tempo real
+  allSystemsOperational: Todos os sistemas operacionais
+  partialSystemOutage: Degradação parcial
+  majorSystemOutage: Indisponibilidade
+  degradedPerformance: Desempenho degradado
+  completeOutage: Indisponível
+
+# Configurações do Upptime (defaults seguros)
+# - Se você quiser, dá pra ativar commits de gráficos/README via workflows (você já tem isso rodando).
+# - Mantém o projeto previsível e sem “surpresas”.
+commitMessages:
+  readmeContent: "chore(status): atualizar README [skip ci]"
+  summaryJson: "chore(status): atualizar summary.json [skip ci]"
+  statusChange: "chore(status): atualização de status [skip ci]"
+  graphsUpdate: "chore(status): atualizar gráficos [skip ci]"
+  responseTime: "chore(status): atualizar response time [skip ci]"
+
+# Evita ruído: se um endpoint estiver ok, mas intermitente, você pode ajustar os thresholds.
+# (Deixe assim por enquanto; mexemos depois se precisar.)
+workflowSchedule:
+  graphs: "0 0 * * *"
+  responseTime: "0 */6 * * *"
+  staticSite: "0 1 * * *"
+  summary: "0 0 * * *"
+  updates: "0 */3 * * *"
+  uptime: "*/5 * * * *"
