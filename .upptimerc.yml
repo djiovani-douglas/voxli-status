@@ -38,7 +38,7 @@ status-website:
   theme: light
 
   # CSS custom (crie este arquivo no branch master)
-  css: https://raw.githubusercontent.com/djiovani-douglas/voxli-status/master/assets/status.css
+  css: https://raw.githubusercontent.com/djiovani-douglas/voxli-status/master/assets/status.css?v=2
 
   # Branding (opcional — descomente quando tiver os arquivos)
   # logoUrl: https://raw.githubusercontent.com/djiovani-douglas/voxli-status/master/assets/logo.svg
