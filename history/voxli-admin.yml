@@ -1,7 +1,7 @@
 url: https://admin.voxli.com.br
-status: up
-code: 200
-responseTime: 1018
-lastUpdated: 2026-03-13T23:31:24.201Z
+status: down
+code: 500
+responseTime: 253
+lastUpdated: 2026-03-14T21:02:38.265Z
 startTime: 2026-02-28T23:58:10.809Z
 generator: Upptime <https://github.com/upptime/upptime>
