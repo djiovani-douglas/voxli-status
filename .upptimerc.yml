@@ -9,7 +9,7 @@ sites:
     url: https://admin.voxli.com.br
     icon: https://voxli.com.br/favicon.ico
   - name: Voxli Portal
-    url: https://empresa-xpto.voxli.com.br
+    url: https://demo.voxli.com.br
     icon: https://voxli.com.br/favicon.ico
 
 status-website:
