@@ -4,7 +4,7 @@
     "url": "https://voxli.com.br",
     "icon": "https://voxli.com.br/favicon.ico",
     "slug": "voxli-platform",
-    "status": "up",
+    "status": "down",
     "uptime": "99.72%",
     "uptimeDay": "100.00%",
     "uptimeWeek": "100.00%",
@@ -16,6 +16,7 @@
     "timeMonth": 526,
     "timeYear": 537,
     "dailyMinutesDown": {
+      "2026-04-30": 0,
       "2026-04-08": 43,
       "2026-04-03": 203
     }
@@ -48,11 +49,11 @@
     "icon": "https://voxli.com.br/favicon.ico",
     "slug": "voxli-portal",
     "status": "up",
-    "uptime": "77.92%",
+    "uptime": "78.10%",
     "uptimeDay": "100.00%",
     "uptimeWeek": "100.00%",
     "uptimeMonth": "56.81%",
-    "uptimeYear": "77.92%",
+    "uptimeYear": "78.10%",
     "time": 478,
     "timeDay": 821,
     "timeWeek": 611,
