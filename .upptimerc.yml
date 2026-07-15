@@ -496,4 +496,4 @@ i18n:
   pastIncidents: Incidentes anteriores
   pastIncidentsResolved: "Resolvido em $MINUTES minutos com $POSTS posts"
   incidentReport: "Incidente #$NUMBER: relatório →"
-  footer: "Desenvolvido com [Upptime]($REPO)"
+  footer: ""
