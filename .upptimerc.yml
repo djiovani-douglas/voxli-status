@@ -29,10 +29,12 @@ status-website:
     </div>
 
     <div class="voxli-services">
-      <div class="voxli-service"><strong>Voxli Platform</strong> — APIs internas da plataforma</div>
-      <div class="voxli-service"><strong>Voxli Admin</strong> — Painel administrativo (backoffice)</div>
-      <div class="voxli-service"><strong>Voxli Portal</strong> — Aplicação pública de demonstração</div>
+      <div class="voxli-service"><span class="voxli-service-name">Voxli Platform</span><span class="voxli-service-desc">APIs internas da plataforma</span></div>
+      <div class="voxli-service"><span class="voxli-service-name">Voxli Admin</span><span class="voxli-service-desc">Painel administrativo (backoffice)</span></div>
+      <div class="voxli-service"><span class="voxli-service-name">Voxli Portal</span><span class="voxli-service-desc">Aplicação pública de demonstração</span></div>
     </div>
+
+    <div class="voxli-uptime-history" id="voxli-uptime-history"></div>
 
   favicon: https://raw.githubusercontent.com/djiovani-douglas/voxli-status/HEAD/assets/favicon.ico
   faviconSvg: https://raw.githubusercontent.com/djiovani-douglas/voxli-status/HEAD/assets/favicon.svg
@@ -114,7 +116,7 @@ status-website:
           insertStat(
             'Disponibilidade da plataforma',
             aggUptime,
-            'Média simples entre Voxli Platform, Voxli Admin e Voxli Portal — histórico completo'
+            'Média simples entre Voxli Platform, Voxli Admin e Voxli Portal (histórico completo)'
           );
         });
 
@@ -136,6 +138,79 @@ status-website:
         .then(function (lastCheck) {
           if (!lastCheck) return;
           insertStat('Última verificação', lastCheck, null);
+        });
+
+      var serviceMeta = [
+        { slug: 'voxli-platform', name: 'Voxli Platform' },
+        { slug: 'voxli-admin', name: 'Voxli Admin' },
+        { slug: 'voxli-portal', name: 'Voxli Portal' }
+      ];
+
+      function dateStr(d) {
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      }
+
+      fetchJson('history/summary.json')
+        .then(function (summary) {
+          if (!Array.isArray(summary)) return null;
+          var host = document.getElementById('voxli-uptime-history');
+          if (!host) return null;
+
+          var title = document.createElement('div');
+          title.className = 'voxli-uh-title';
+          title.textContent = 'Histórico de disponibilidade (90 dias)';
+          host.appendChild(title);
+
+          var days = 90;
+          var today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          serviceMeta.forEach(function (meta) {
+            var entry = summary.filter(function (s) { return s.slug === meta.slug; })[0];
+            if (!entry) return;
+
+            var row = document.createElement('div');
+            row.className = 'voxli-uh-row';
+
+            var name = document.createElement('span');
+            name.className = 'voxli-uh-name';
+            name.textContent = meta.name;
+            row.appendChild(name);
+
+            var bars = document.createElement('div');
+            bars.className = 'voxli-uh-bars';
+            var down = entry.dailyMinutesDown || {};
+            for (var i = days - 1; i >= 0; i--) {
+              var d = new Date(today);
+              d.setDate(d.getDate() - i);
+              var key = dateStr(d);
+              var mins = down[key] || 0;
+              var bar = document.createElement('div');
+              bar.className = 'voxli-uh-bar';
+              if (mins <= 0) bar.style.background = 'var(--voxli-success)';
+              else if (mins < 360) bar.style.background = 'var(--voxli-warning)';
+              else bar.style.background = 'var(--voxli-danger)';
+              bar.title = key + (mins > 0 ? ': ' + mins + ' min indisponível' : ': operacional');
+              bars.appendChild(bar);
+            }
+            row.appendChild(bars);
+
+            var pct = document.createElement('span');
+            pct.className = 'voxli-uh-pct';
+            pct.textContent = entry.uptime || '';
+            row.appendChild(pct);
+
+            host.appendChild(row);
+          });
+
+          var labels = document.createElement('div');
+          labels.className = 'voxli-uh-labels';
+          labels.innerHTML = '<span>90 dias atrás</span><span>Hoje</span>';
+          host.appendChild(labels);
+        })
+        .catch(function () {
+          var host = document.getElementById('voxli-uptime-history');
+          if (host) host.remove();
         });
     });
 
@@ -190,16 +265,24 @@ status-website:
     h1 { color: var(--body-text-color); font-weight: 700; font-size: 1.85rem; letter-spacing: -0.01em; }
     p.description { color: var(--voxli-muted); font-size: 0.97rem; }
 
-    /* Faixa de confiança e serviços monitorados (introMessage) */
+    /* Faixa de confiança, serviços monitorados e histórico (introMessage) */
+    .voxli-trust-band,
+    .voxli-services,
+    .voxli-uptime-history,
+    .voxli-live-stats {
+      width: 100%;
+      box-sizing: border-box;
+    }
     .voxli-trust-band {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 0.6rem;
       margin: 1.1rem 0;
-      padding: 1rem 1.1rem;
+      padding: 1.1rem 1.2rem;
       background: var(--card-background-color);
       border: 1px solid var(--voxli-border);
-      border-radius: 12px;
+      border-radius: 14px;
+      box-shadow: 0 1px 3px rgba(11, 42, 74, 0.05);
       font-size: 0.85rem;
       color: var(--voxli-muted);
       text-align: center;
@@ -209,21 +292,61 @@ status-website:
       border-left: 1px solid var(--voxli-border);
     }
     .voxli-trust-item:first-child { border-left: none; }
+
     .voxli-services {
       display: grid;
-      gap: 0.55rem;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.6rem;
       margin: 0 0 1.1rem;
-      padding: 1rem 1.1rem;
+      padding: 1.1rem 1.2rem;
       background: var(--card-background-color);
       border: 1px solid var(--voxli-border);
-      border-radius: 12px;
-      font-size: 0.88rem;
+      border-radius: 14px;
+      box-shadow: 0 1px 3px rgba(11, 42, 74, 0.05);
     }
-    .voxli-service strong { color: var(--voxli-navy); }
+    .voxli-service {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      text-align: center;
+    }
+    .voxli-service-name { font-weight: 700; font-size: 0.92rem; color: var(--voxli-navy); }
+    .voxli-service-desc { font-size: 0.8rem; color: var(--voxli-muted); }
+
+    /* Histórico de disponibilidade — 90 dias (estilo Stripe/Railway, inserido via JS) */
+    .voxli-uptime-history {
+      margin: 0 0 1.1rem;
+      padding: 1.1rem 1.2rem;
+      background: var(--card-background-color);
+      border: 1px solid var(--voxli-border);
+      border-radius: 14px;
+      box-shadow: 0 1px 3px rgba(11, 42, 74, 0.05);
+    }
+    .voxli-uh-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.9rem; }
+    .voxli-uh-row {
+      display: grid;
+      grid-template-columns: 8.5rem 1fr 4rem;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.55rem;
+    }
+    .voxli-uh-name { font-size: 0.82rem; font-weight: 600; color: var(--body-text-color); }
+    .voxli-uh-bars { display: flex; gap: 2px; height: 22px; }
+    .voxli-uh-bar { flex: 1; border-radius: 2px; min-width: 2px; }
+    .voxli-uh-pct { font-size: 0.82rem; font-weight: 600; text-align: right; color: var(--voxli-muted); }
+    .voxli-uh-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--voxli-muted);
+      margin-top: 0.3rem;
+    }
 
     @media (max-width: 640px) {
-      .voxli-trust-band { grid-template-columns: 1fr; text-align: left; }
+      .voxli-trust-band, .voxli-services { grid-template-columns: 1fr; text-align: left; }
       .voxli-trust-item { border-left: none; padding: 0.15rem 0; }
+      .voxli-service { text-align: left; }
+      .voxli-uh-row { grid-template-columns: 5.5rem 1fr 3rem; gap: 0.5rem; }
     }
 
     /* Cartão de estatísticas ao vivo (inserido via JS, com fallback gracioso) */
@@ -241,14 +364,26 @@ status-website:
     .voxli-stat-value { font-weight: 700; font-size: 1.05rem; color: var(--voxli-navy); }
     .voxli-stat-label { font-size: 0.78rem; color: var(--voxli-muted); }
 
-    /* Bloco "Estado atual" nativo */
+    /* Bloco "Estado atual" nativo, com pulso sutil indicando monitoramento ao vivo */
     .status-bar {
       background: var(--voxli-success-bg);
       border: 1px solid rgba(22, 163, 74, 0.35);
       border-radius: 12px;
       padding: 1rem 1.5rem;
+      position: relative;
     }
-    .status-bar.all-good { color: #14532d; font-weight: 600; }
+    .status-bar.all-good {
+      color: #14532d;
+      font-weight: 600;
+      animation: voxli-pulse-ring 2.4s ease-in-out infinite;
+    }
+    @keyframes voxli-pulse-ring {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.22); }
+      50% { box-shadow: 0 0 0 7px rgba(22, 163, 74, 0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .status-bar.all-good { animation: none; }
+    }
 
     /* Cards de serviço e incidentes */
     article, .component {
@@ -360,5 +495,5 @@ i18n:
   url: URL
   pastIncidents: Incidentes anteriores
   pastIncidentsResolved: "Resolvido em $MINUTES minutos com $POSTS posts"
-  incidentReport: "Incidente #$NUMBER — relatório →"
+  incidentReport: "Incidente #$NUMBER: relatório →"
   footer: "Desenvolvido com [Upptime]($REPO)"
