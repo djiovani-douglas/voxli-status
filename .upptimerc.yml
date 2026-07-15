@@ -47,6 +47,9 @@ status-website:
 
   customFootHtml: |
     <div class="voxli-footer-links">
+      <span class="voxli-live-dot"></span>
+      <span>Monitoramento ativo</span>
+      <span class="voxli-footer-sep">·</span>
       <a href="https://voxli.com.br/trust/" target="_blank" rel="noopener">Trust Center</a>
     </div>
 
@@ -54,6 +57,60 @@ status-website:
     window.addEventListener('load', function () {
       var REPO = 'https://raw.githubusercontent.com/djiovani-douglas/voxli-status/HEAD/';
       var services = ['voxli-platform', 'voxli-admin', 'voxli-portal'];
+
+      // O Upptime formata datas em inglês/EUA (M/D/AAAA) e isso não passa pelo
+      // dicionário i18n. Localiza pra pt-BR direto no texto renderizado, e observa
+      // mudanças no DOM porque a navegação entre páginas (ex: home -> incidente)
+      // é client-side e não dispara 'load' de novo.
+      var DATE_RE = /\b(\d{1,2})\/(\d{1,2})\/(\d{4})(,\s*\d{1,2}:\d{2}:\d{2}\s*[AP]M)?\b/g;
+
+      function formatBR(match) {
+        var d = new Date(match);
+        if (isNaN(d.getTime())) return match;
+        var hasTime = /\d{1,2}:\d{2}:\d{2}\s*[AP]M/i.test(match);
+        var datePart = d.toLocaleDateString('pt-BR');
+        return hasTime ? datePart + ', ' + d.toLocaleTimeString('pt-BR') : datePart;
+      }
+
+      function fixDatesIn(root) {
+        var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+          acceptNode: function (node) {
+            if (!node.nodeValue || !DATE_RE.test(node.nodeValue)) return NodeFilter.FILTER_SKIP;
+            DATE_RE.lastIndex = 0;
+            var parent = node.parentElement;
+            if (!parent || parent.closest('script, style, [data-voxli-date-fixed]')) return NodeFilter.FILTER_SKIP;
+            return NodeFilter.FILTER_ACCEPT;
+          }
+        });
+        var nodes = [];
+        var n;
+        while ((n = walker.nextNode())) nodes.push(n);
+
+        nodes.forEach(function (node) {
+          var text = node.nodeValue;
+          var frag = document.createDocumentFragment();
+          var lastIndex = 0;
+          var match;
+          DATE_RE.lastIndex = 0;
+          while ((match = DATE_RE.exec(text))) {
+            if (match.index > lastIndex) frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+            var span = document.createElement('span');
+            span.setAttribute('data-voxli-date-fixed', '1');
+            span.textContent = formatBR(match[0]);
+            frag.appendChild(span);
+            lastIndex = match.index + match[0].length;
+          }
+          if (lastIndex < text.length) frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+          node.parentNode.replaceChild(frag, node);
+        });
+      }
+
+      fixDatesIn(document.body);
+      var dateFixTimer;
+      new MutationObserver(function () {
+        clearTimeout(dateFixTimer);
+        dateFixTimer = setTimeout(function () { fixDatesIn(document.body); }, 250);
+      }).observe(document.body, { childList: true, subtree: true });
 
       function withTimeout(promise, ms) {
         return Promise.race([
@@ -262,8 +319,8 @@ status-website:
     .logo { font-size: 1.05rem !important; font-weight: 700 !important; }
     .logo img { height: 26px; margin-right: 8px; }
 
-    h1 { color: var(--body-text-color); font-weight: 700; font-size: 1.85rem; letter-spacing: -0.01em; }
-    p.description { color: var(--voxli-muted); font-size: 0.97rem; }
+    h1 { color: var(--body-text-color); font-weight: 700; font-size: 1.85rem; letter-spacing: -0.01em; text-align: center; }
+    p.description { color: var(--voxli-muted); font-size: 0.97rem; text-align: center; }
 
     /* Faixa de confiança, serviços monitorados e histórico (introMessage) */
     .voxli-trust-band,
@@ -452,9 +509,34 @@ status-website:
     }
     .incident section > article:last-child::after { display: none; }
 
-    footer, .footer { opacity: 0.6; font-size: 0.8rem; }
-    .voxli-footer-links { text-align: center; padding: 0.5rem 0 1.5rem; font-size: 0.8rem; }
+    footer, .footer { opacity: 0.6; font-size: 0.8rem; text-align: center; }
+    .voxli-footer-links {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      text-align: center;
+      padding: 0.6rem 0 1.6rem;
+      font-size: 0.8rem;
+      color: var(--voxli-muted);
+    }
     .voxli-footer-links a { color: var(--voxli-navy); text-decoration: underline; }
+    .voxli-footer-sep { opacity: 0.5; }
+    .voxli-live-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--voxli-success);
+      animation: voxli-pulse-dot 1.8s ease-in-out infinite;
+    }
+    @keyframes voxli-pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.7); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .voxli-live-dot { animation: none; }
+    }
 
     @media (max-width: 640px) {
       .voxli-live-stats { flex-direction: column; gap: 0.6rem; }
