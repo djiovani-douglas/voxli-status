@@ -45,16 +45,22 @@ status-website:
     - title: Voxli
       href: https://voxli.com.br
 
-  customFootHtml: |
-    <div class="voxli-footer-links">
-      <span class="voxli-live-dot"></span>
-      <span>Monitoramento ativo</span>
-      <span class="voxli-footer-sep">·</span>
-      <a href="https://voxli.com.br/trust/" target="_blank" rel="noopener">Trust Center</a>
-    </div>
-
   js: |
     window.addEventListener('load', function () {
+      // customFootHtml não é renderizado nesta versão do Upptime (testado e
+      // confirmado ausente no HTML publicado) — o rodapé é inserido via JS,
+      // a mesma técnica já validada no card de estatísticas ao vivo.
+      var nativeFooter = document.querySelector('footer') || document.querySelector('.footer');
+      if (nativeFooter && !document.querySelector('.voxli-footer-links')) {
+        var links = document.createElement('div');
+        links.className = 'voxli-footer-links';
+        links.innerHTML =
+          '<span class="voxli-live-dot"></span>' +
+          '<span>Monitoramento ativo</span>' +
+          '<span class="voxli-footer-sep">·</span>' +
+          '<a href="https://voxli.com.br/trust/" target="_blank" rel="noopener">Trust Center</a>';
+        nativeFooter.parentNode.insertBefore(links, nativeFooter.nextSibling);
+      }
       var REPO = 'https://raw.githubusercontent.com/djiovani-douglas/voxli-status/HEAD/';
       var services = ['voxli-platform', 'voxli-admin', 'voxli-portal'];
 
@@ -547,10 +553,10 @@ i18n:
   up: Operacional
   down: Fora do ar
   degraded: Degradado
-  allSystemsOperational: Todos os sistemas operacionais ✅
-  degradedPerformance: Desempenho degradado ⚠️
-  completeOutage: Indisponibilidade total 🔴
-  partialOutage: Indisponibilidade parcial 🟠
+  allSystemsOperational: Todos os sistemas operacionais
+  degradedPerformance: Desempenho degradado
+  completeOutage: Indisponibilidade total
+  partialOutage: Indisponibilidade parcial
   duration24H: 24h
   duration7D: 7d
   duration30D: 30d
