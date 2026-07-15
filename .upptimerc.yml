@@ -5,86 +5,348 @@ sites:
   - name: Voxli Platform
     url: https://voxli.com.br
     icon: https://voxli.com.br/favicon.ico
+    maxResponseTime: 3000
   - name: Voxli Admin
     url: https://admin.voxli.com.br
     icon: https://voxli.com.br/favicon.ico
+    maxResponseTime: 3000
   - name: Voxli Portal
     url: https://demo.voxli.com.br
     icon: https://voxli.com.br/favicon.ico
+    maxResponseTime: 3000
 
 status-website:
   cname: status.voxli.com.br
   name: Voxli Status
   introTitle: Status da Plataforma Voxli
-  introMessage: Monitoramento em tempo real da infraestrutura Voxli. Todos os serviços são verificados a cada 5 minutos.
-  favicon: https://voxli.com.br/favicon.ico
-  logoUrl: https://voxli.com.br/favicon.ico
+  introMessage: |
+    Monitoramento em tempo real da infraestrutura Voxli. Todos os serviços são verificados a cada 5 minutos.
+
+    <div class="voxli-trust-band">
+      <div class="voxli-trust-item">Monitoramento contínuo, 24 horas por dia</div>
+      <div class="voxli-trust-item">Incidentes reportados publicamente</div>
+      <div class="voxli-trust-item">Histórico de disponibilidade transparente</div>
+    </div>
+
+    <div class="voxli-services">
+      <div class="voxli-service"><strong>Voxli Platform</strong> — APIs internas da plataforma</div>
+      <div class="voxli-service"><strong>Voxli Admin</strong> — Painel administrativo (backoffice)</div>
+      <div class="voxli-service"><strong>Voxli Portal</strong> — Aplicação pública de demonstração</div>
+    </div>
+
+    [Assinar atualizações no GitHub](https://github.com/djiovani-douglas/voxli-status/issues) · [Assinar via RSS](https://github.com/djiovani-douglas/voxli-status/issues.atom)
+  favicon: https://status.voxli.com.br/assets/favicon.ico
+  faviconSvg: https://status.voxli.com.br/assets/favicon.svg
+  logoUrl: https://status.voxli.com.br/assets/logo.svg
   navbar:
     - title: Status
       href: /
     - title: Voxli
       href: https://voxli.com.br
+
+  customFootHtml: |
+    <div class="voxli-footer-links">
+      <a href="https://voxli.com.br/trust/" target="_blank" rel="noopener">Trust Center</a>
+    </div>
+
+  js: |
+    window.addEventListener('load', function () {
+      var REPO = 'https://raw.githubusercontent.com/djiovani-douglas/voxli-status/HEAD/';
+      var services = ['voxli-platform', 'voxli-admin', 'voxli-portal'];
+
+      function withTimeout(promise, ms) {
+        return Promise.race([
+          promise,
+          new Promise(function (_, reject) {
+            setTimeout(function () { reject(new Error('timeout')); }, ms);
+          })
+        ]);
+      }
+
+      function fetchJson(path) {
+        return withTimeout(fetch(REPO + path).then(function (r) {
+          if (!r.ok) throw new Error('bad response');
+          return r.json();
+        }), 4000);
+      }
+
+      function fetchText(path) {
+        return withTimeout(fetch(REPO + path).then(function (r) {
+          if (!r.ok) throw new Error('bad response');
+          return r.text();
+        }), 4000);
+      }
+
+      function insertStat(label, value, tooltip) {
+        var anchor = document.querySelector('.status-bar') || document.querySelector('main');
+        if (!anchor || !anchor.parentNode) return;
+        var card = document.querySelector('.voxli-live-stats');
+        if (!card) {
+          card = document.createElement('div');
+          card.className = 'voxli-live-stats';
+          anchor.parentNode.insertBefore(card, anchor.nextSibling);
+        }
+        var stat = document.createElement('div');
+        stat.className = 'voxli-stat';
+        if (tooltip) stat.title = tooltip;
+        var value_ = document.createElement('span');
+        value_.className = 'voxli-stat-value';
+        value_.textContent = value;
+        var label_ = document.createElement('span');
+        label_.className = 'voxli-stat-label';
+        label_.textContent = label;
+        stat.appendChild(value_);
+        stat.appendChild(label_);
+        card.appendChild(stat);
+      }
+
+      Promise.all(services.map(function (s) { return fetchJson('api/' + s + '/uptime.json'); }))
+        .then(function (results) {
+          var values = results
+            .map(function (r) { return parseFloat(r && r.message); })
+            .filter(function (n) { return !isNaN(n); });
+          if (values.length !== services.length) return null;
+          var avg = values.reduce(function (a, b) { return a + b; }, 0) / values.length;
+          return avg.toFixed(2).replace('.', ',') + '%';
+        })
+        .catch(function () { return null; })
+        .then(function (aggUptime) {
+          if (!aggUptime) return;
+          insertStat(
+            'Disponibilidade da plataforma',
+            aggUptime,
+            'Média simples entre Voxli Platform, Voxli Admin e Voxli Portal — histórico completo'
+          );
+        });
+
+      Promise.all(services.map(function (s) { return fetchText('history/' + s + '.yml'); }))
+        .then(function (texts) {
+          var dates = texts
+            .map(function (t) {
+              var m = t.match(/lastUpdated:\s*(.+)/);
+              return m ? new Date(m[1].trim()) : null;
+            })
+            .filter(function (d) { return d && !isNaN(d.getTime()); });
+          if (!dates.length) return null;
+          var latest = new Date(Math.max.apply(null, dates));
+          var minutes = Math.round((Date.now() - latest.getTime()) / 60000);
+          if (minutes < 0 || minutes > 24 * 60) return null;
+          return minutes <= 1 ? 'agora mesmo' : 'há ' + minutes + ' min';
+        })
+        .catch(function () { return null; })
+        .then(function (lastCheck) {
+          if (!lastCheck) return;
+          insertStat('Última verificação', lastCheck, null);
+        });
+    });
+
   css: |
     :root {
-      --body-background-color: #f8fafc;
-      --body-text-color: #1e293b;
+      --voxli-navy: #0b2a4a;
+      --voxli-navy-light: #123a63;
+      --body-background-color: #f6f7f9;
+      --body-text-color: #14202e;
       --card-background-color: #ffffff;
-      --nav-background-color: #0f172a;
-      --nav-border-bottom-color: #1e293b;
-      --nav-color: #f8fafc;
-      --tag-color: #6366f1;
+      --nav-background-color: #0b2a4a;
+      --nav-border-bottom-color: #0b2a4a;
+      --nav-color: #f6f7f9;
+      --tag-color: #0b2a4a;
+
+      --voxli-muted: #5b6b7c;
+      --voxli-border: rgba(11, 42, 74, 0.12);
+      --voxli-success: #16a34a;
+      --voxli-success-bg: rgba(22, 163, 74, 0.12);
+      --voxli-warning: #d97706;
+      --voxli-warning-bg: rgba(217, 119, 6, 0.12);
+      --voxli-danger: #dc2626;
+      --voxli-danger-bg: rgba(220, 38, 38, 0.12);
     }
-    body { font-family: 'Inter', -apple-system, sans-serif; }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --body-background-color: #0b1420;
+        --body-text-color: #e6ecf3;
+        --card-background-color: #101c2c;
+        --nav-background-color: #081726;
+        --nav-border-bottom-color: #0b2a4a;
+        --voxli-muted: #93a3b5;
+        --voxli-border: rgba(230, 236, 243, 0.12);
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
     nav {
-      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%) !important;
-      border-bottom: 1px solid rgba(99,102,241,0.2) !important;
-      padding: 0.75rem 1.5rem;
+      background: var(--nav-background-color) !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+      padding: 0.85rem 1.5rem;
     }
-    nav a { color: #f8fafc !important; font-weight: 600; letter-spacing: 0.01em; }
-    nav a:hover { color: #a5b4fc !important; }
-    .logo { font-size: 1.1rem !important; font-weight: 700 !important; }
-    .logo img { height: 28px; margin-right: 8px; }
-    h1 { color: #0f172a; font-weight: 700; font-size: 1.8rem; }
-    p.description { color: #64748b; font-size: 0.95rem; }
+    nav a { color: var(--nav-color) !important; font-weight: 600; letter-spacing: 0.01em; }
+    nav a:hover { color: #a9c4e3 !important; }
+    .logo { font-size: 1.05rem !important; font-weight: 700 !important; }
+    .logo img { height: 26px; margin-right: 8px; }
+
+    h1 { color: var(--body-text-color); font-weight: 700; font-size: 1.85rem; letter-spacing: -0.01em; }
+    p.description { color: var(--voxli-muted); font-size: 0.97rem; }
+
+    /* Faixa de confiança e serviços monitorados (introMessage) */
+    .voxli-trust-band {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.5rem;
+      margin: 1rem 0;
+      padding: 0.9rem 1.1rem;
+      background: var(--card-background-color);
+      border: 1px solid var(--voxli-border);
+      border-radius: 12px;
+      font-size: 0.88rem;
+      color: var(--voxli-muted);
+    }
+    .voxli-services {
+      display: grid;
+      gap: 0.4rem;
+      margin: 0 0 1.1rem;
+      padding: 0.9rem 1.1rem;
+      background: var(--card-background-color);
+      border: 1px solid var(--voxli-border);
+      border-radius: 12px;
+      font-size: 0.88rem;
+    }
+    .voxli-service strong { color: var(--voxli-navy); }
+
+    /* Cartão de estatísticas ao vivo (inserido via JS, com fallback gracioso) */
+    .voxli-live-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      margin: 1rem 0;
+      padding: 0.9rem 1.1rem;
+      border: 1px solid var(--voxli-border);
+      border-radius: 12px;
+      background: var(--card-background-color);
+    }
+    .voxli-stat { display: flex; flex-direction: column; cursor: default; }
+    .voxli-stat-value { font-weight: 700; font-size: 1.05rem; color: var(--voxli-navy); }
+    .voxli-stat-label { font-size: 0.78rem; color: var(--voxli-muted); }
+
+    /* Bloco "Estado atual" nativo */
     .status-bar {
-      background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-      border: 1px solid #6ee7b7;
+      background: var(--voxli-success-bg);
+      border: 1px solid rgba(22, 163, 74, 0.35);
       border-radius: 12px;
       padding: 1rem 1.5rem;
     }
-    .status-bar.all-good { color: #065f46; font-weight: 600; }
-    article {
-      border-radius: 12px !important;
-      border: 1px solid #e2e8f0 !important;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
-      transition: box-shadow 0.2s ease;
+    .status-bar.all-good { color: #14532d; font-weight: 600; }
+
+    /* Cards de serviço e incidentes */
+    article, .component {
+      border-radius: 14px !important;
+      border: 1px solid var(--voxli-border) !important;
+      box-shadow: 0 1px 3px rgba(11, 42, 74, 0.06) !important;
+      transition: box-shadow 0.15s ease;
+      background: var(--card-background-color) !important;
     }
-    article:hover { box-shadow: 0 4px 12px rgba(99,102,241,0.12) !important; }
-    article h2 { font-weight: 600; color: #1e293b; }
+    article:hover { box-shadow: 0 6px 16px rgba(11, 42, 74, 0.1) !important; }
+    article h2 { font-weight: 600; color: var(--body-text-color); }
+
     .uptime-tag {
-      background: #6366f1 !important;
+      background: var(--voxli-navy) !important;
       border-radius: 6px;
       font-weight: 600;
     }
-    footer { color: #94a3b8; font-size: 0.85rem; }
-    footer a { color: #6366f1 !important; }
+
+    /* Severidade real (up / degraded / down) */
+    .up { border-left: 3px solid var(--voxli-success) !important; }
+    .degraded { border-left: 3px solid var(--voxli-warning) !important; }
+    .down { border-left: 3px solid var(--voxli-danger) !important; }
+
+    /* Estado do incidente */
+    .tag.open { background: var(--voxli-danger) !important; color: #fff !important; }
+    .tag.closed { background: var(--voxli-success) !important; color: #fff !important; }
+
+    /* Pills de período (24h / 7d / 30d / 1a / tudo) */
+    a[href*="24h"], a[href*="7d"], a[href*="30d"], a[href*="1y"], a[href*="all"] {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--voxli-border);
+      text-decoration: none !important;
+      margin-left: 6px;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    /* Linha do tempo do incidente — cada atualização vira um nó conectado */
+    section > article {
+      position: relative;
+      margin-left: 1.4rem;
+      padding-left: 1.2rem !important;
+    }
+    section > article::before {
+      content: "";
+      position: absolute;
+      left: -1.4rem;
+      top: 0.35rem;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--voxli-navy);
+    }
+    section > article::after {
+      content: "";
+      position: absolute;
+      left: calc(-1.4rem + 4px);
+      top: 0.9rem;
+      bottom: -1.6rem;
+      width: 2px;
+      background: var(--voxli-border);
+    }
+    section > article:last-child::after { display: none; }
+
+    footer, .footer { opacity: 0.6; font-size: 0.8rem; }
+    .voxli-footer-links { text-align: center; padding: 0.5rem 0 1.5rem; font-size: 0.8rem; }
+    .voxli-footer-links a { color: var(--voxli-navy); text-decoration: underline; }
+
+    @media (max-width: 640px) {
+      .voxli-trust-band, .voxli-live-stats { flex-direction: column; gap: 0.6rem; }
+    }
 
   i18n:
-    All systems are operational: Todos os sistemas operacionais ✅
-    Degraded performance: Desempenho degradado ⚠️
-    Complete outage: Indisponibilidade total 🔴
-    Partial outage: Indisponibilidade parcial 🟠
-    Live status: Status em tempo real
-    Overall uptime: Uptime geral
-    Average response time: Tempo médio de resposta
-    Incident history: Histórico de incidentes
-    Past incidents: Incidentes anteriores
-    No incidents reported: Nenhum incidente registrado
-    Powered by: Desenvolvido com
-    Status: Status
-    History: Histórico
-    Response time: Tempo de resposta
-    Uptime: Disponibilidade
-    Up: Online
-    Down: Fora do ar
-    Degraded: Degradado
+    liveStatus: Status em tempo real
+    up: Operacional
+    down: Fora do ar
+    degraded: Degradado
+    allSystemsOperational: Todos os sistemas operacionais ✅
+    degradedPerformance: Desempenho degradado ⚠️
+    completeOutage: Indisponibilidade total 🔴
+    partialOutage: Indisponibilidade parcial 🟠
+    duration24H: 24h
+    duration7D: 7d
+    duration30D: 30d
+    duration1Y: 1a
+    durationAll: tudo
+    overallUptime: "Uptime geral: $UPTIME"
+    overallUptimeTitle: Uptime geral
+    averageResponseTime: "Tempo médio de resposta: $TIME"
+    averageResponseTimeTitle: Tempo médio de resposta
+    ms: ms
+    uptime: Disponibilidade
+    uptimeDay: Disponibilidade (24h)
+    uptimeWeek: Disponibilidade (7 dias)
+    uptimeMonth: Disponibilidade (30 dias)
+    uptimeYear: Disponibilidade (1 ano)
+    responseTime: Tempo de resposta
+    responseTimeDay: Tempo de resposta (24h)
+    responseTimeWeek: Tempo de resposta (7 dias)
+    responseTimeMonth: Tempo de resposta (30 dias)
+    responseTimeYear: Tempo de resposta (1 ano)
+    responseTimeGraphAlt: Gráfico de tempo de resposta
+    status: Status
+    history: Histórico
+    url: URL
+    pastIncidents: Incidentes anteriores
+    pastIncidentsResolved: "Resolvido em $MINUTES minutos com $POSTS posts"
+    incidentReport: "Incidente #$NUMBER — relatório →"
+    footer: "Desenvolvido com [Upptime]($REPO)"
