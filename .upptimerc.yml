@@ -134,52 +134,6 @@ status-website:
         }), 4000);
       }
 
-      function fetchText(path) {
-        return withTimeout(fetch(REPO + path).then(function (r) {
-          if (!r.ok) throw new Error('bad response');
-          return r.text();
-        }), 4000);
-      }
-
-      // Indicador discreto no navbar (não um card no meio do conteúdo — o
-      // .status-bar usado antes não era um seletor confiável e o card acabava
-      // inserido no lugar errado da página). O agregado de uptime saiu porque
-      // já é redundante com o histórico de 90 dias por serviço, mais abaixo.
-      function insertNavIndicator(text, tooltip) {
-        var navLinks = document.querySelectorAll('nav a');
-        if (!navLinks.length) return;
-        var parent = navLinks[navLinks.length - 1].parentNode;
-        if (!parent) return;
-        var el = document.querySelector('.voxli-nav-indicator');
-        if (!el) {
-          el = document.createElement('span');
-          el.className = 'voxli-nav-indicator';
-          parent.appendChild(el);
-        }
-        if (tooltip) el.title = tooltip;
-        el.innerHTML = '<span class="voxli-live-dot"></span>' + text;
-      }
-
-      Promise.all(services.map(function (s) { return fetchText('history/' + s + '.yml'); }))
-        .then(function (texts) {
-          var dates = texts
-            .map(function (t) {
-              var m = t.match(/lastUpdated:\s*(.+)/);
-              return m ? new Date(m[1].trim()) : null;
-            })
-            .filter(function (d) { return d && !isNaN(d.getTime()); });
-          if (!dates.length) return null;
-          var latest = new Date(Math.max.apply(null, dates));
-          var minutes = Math.round((Date.now() - latest.getTime()) / 60000);
-          if (minutes < 0 || minutes > 24 * 60) return null;
-          return minutes <= 1 ? 'agora mesmo' : 'há ' + minutes + ' min';
-        })
-        .catch(function () { return null; })
-        .then(function (lastCheck) {
-          if (!lastCheck) return;
-          insertNavIndicator('Verificado ' + lastCheck, 'Horário da verificação mais recente registrada');
-        });
-
       var serviceMeta = [
         { slug: 'voxli-platform', name: 'Voxli Platform' },
         { slug: 'voxli-admin', name: 'Voxli Admin' },
@@ -303,7 +257,7 @@ status-website:
     .logo img { height: 26px; margin-right: 8px; }
 
     h1 { color: var(--body-text-color); font-weight: 700; font-size: 1.85rem; letter-spacing: -0.01em; text-align: center; }
-    p.description { color: var(--voxli-muted); font-size: 0.97rem; text-align: center; }
+    p.description, h1 + p { color: var(--voxli-muted); font-size: 0.97rem; text-align: center; }
 
     /* Faixa de confiança, serviços monitorados e histórico (introMessage) */
     .voxli-trust-band,
@@ -313,17 +267,6 @@ status-website:
       box-sizing: border-box;
     }
 
-    /* Indicador discreto no navbar ("Verificado há X min") */
-    .voxli-nav-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      margin-left: 1rem;
-      font-size: 0.72rem;
-      font-weight: 500;
-      color: rgba(246, 247, 249, 0.65);
-      white-space: nowrap;
-    }
     .voxli-trust-band {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
