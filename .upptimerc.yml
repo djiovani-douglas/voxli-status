@@ -20,7 +20,7 @@ status-website:
   name: Voxli Status
   introTitle: Status da Plataforma Voxli
   introMessage: |
-    Monitoramento em tempo real da infraestrutura Voxli. Todos os serviços são verificados a cada 5 minutos.
+    Monitoramento contínuo e automático da infraestrutura Voxli.
 
     <div class="voxli-trust-band">
       <div class="voxli-trust-item">Monitoramento contínuo, 24 horas por dia</div>
@@ -141,47 +141,24 @@ status-website:
         }), 4000);
       }
 
-      function insertStat(label, value, tooltip) {
-        var anchor = document.querySelector('.status-bar') || document.querySelector('main');
-        if (!anchor || !anchor.parentNode) return;
-        var card = document.querySelector('.voxli-live-stats');
-        if (!card) {
-          card = document.createElement('div');
-          card.className = 'voxli-live-stats';
-          anchor.parentNode.insertBefore(card, anchor.nextSibling);
+      // Indicador discreto no navbar (não um card no meio do conteúdo — o
+      // .status-bar usado antes não era um seletor confiável e o card acabava
+      // inserido no lugar errado da página). O agregado de uptime saiu porque
+      // já é redundante com o histórico de 90 dias por serviço, mais abaixo.
+      function insertNavIndicator(text, tooltip) {
+        var navLinks = document.querySelectorAll('nav a');
+        if (!navLinks.length) return;
+        var parent = navLinks[navLinks.length - 1].parentNode;
+        if (!parent) return;
+        var el = document.querySelector('.voxli-nav-indicator');
+        if (!el) {
+          el = document.createElement('span');
+          el.className = 'voxli-nav-indicator';
+          parent.appendChild(el);
         }
-        var stat = document.createElement('div');
-        stat.className = 'voxli-stat';
-        if (tooltip) stat.title = tooltip;
-        var value_ = document.createElement('span');
-        value_.className = 'voxli-stat-value';
-        value_.textContent = value;
-        var label_ = document.createElement('span');
-        label_.className = 'voxli-stat-label';
-        label_.textContent = label;
-        stat.appendChild(value_);
-        stat.appendChild(label_);
-        card.appendChild(stat);
+        if (tooltip) el.title = tooltip;
+        el.innerHTML = '<span class="voxli-live-dot"></span>' + text;
       }
-
-      Promise.all(services.map(function (s) { return fetchJson('api/' + s + '/uptime.json'); }))
-        .then(function (results) {
-          var values = results
-            .map(function (r) { return parseFloat(r && r.message); })
-            .filter(function (n) { return !isNaN(n); });
-          if (values.length !== services.length) return null;
-          var avg = values.reduce(function (a, b) { return a + b; }, 0) / values.length;
-          return avg.toFixed(2).replace('.', ',') + '%';
-        })
-        .catch(function () { return null; })
-        .then(function (aggUptime) {
-          if (!aggUptime) return;
-          insertStat(
-            'Disponibilidade da plataforma',
-            aggUptime,
-            'Média simples entre Voxli Platform, Voxli Admin e Voxli Portal (histórico completo)'
-          );
-        });
 
       Promise.all(services.map(function (s) { return fetchText('history/' + s + '.yml'); }))
         .then(function (texts) {
@@ -200,7 +177,7 @@ status-website:
         .catch(function () { return null; })
         .then(function (lastCheck) {
           if (!lastCheck) return;
-          insertStat('Última verificação', lastCheck, null);
+          insertNavIndicator('Verificado ' + lastCheck, 'Horário da verificação mais recente registrada');
         });
 
       var serviceMeta = [
@@ -331,10 +308,21 @@ status-website:
     /* Faixa de confiança, serviços monitorados e histórico (introMessage) */
     .voxli-trust-band,
     .voxli-services,
-    .voxli-uptime-history,
-    .voxli-live-stats {
+    .voxli-uptime-history {
       width: 100%;
       box-sizing: border-box;
+    }
+
+    /* Indicador discreto no navbar ("Verificado há X min") */
+    .voxli-nav-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-left: 1rem;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: rgba(246, 247, 249, 0.65);
+      white-space: nowrap;
     }
     .voxli-trust-band {
       display: grid;
@@ -411,21 +399,6 @@ status-website:
       .voxli-service { text-align: left; }
       .voxli-uh-row { grid-template-columns: 5.5rem 1fr 3rem; gap: 0.5rem; }
     }
-
-    /* Cartão de estatísticas ao vivo (inserido via JS, com fallback gracioso) */
-    .voxli-live-stats {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1.5rem;
-      margin: 1rem 0;
-      padding: 0.9rem 1.1rem;
-      border: 1px solid var(--voxli-border);
-      border-radius: 12px;
-      background: var(--card-background-color);
-    }
-    .voxli-stat { display: flex; flex-direction: column; cursor: default; }
-    .voxli-stat-value { font-weight: 700; font-size: 1.05rem; color: var(--voxli-navy); }
-    .voxli-stat-label { font-size: 0.78rem; color: var(--voxli-muted); }
 
     /* Bloco "Estado atual" nativo, com pulso sutil indicando monitoramento ao vivo */
     .status-bar {
@@ -542,10 +515,6 @@ status-website:
     }
     @media (prefers-reduced-motion: reduce) {
       .voxli-live-dot { animation: none; }
-    }
-
-    @media (max-width: 640px) {
-      .voxli-live-stats { flex-direction: column; gap: 0.6rem; }
     }
 
 i18n:
