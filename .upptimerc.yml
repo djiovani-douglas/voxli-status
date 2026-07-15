@@ -34,10 +34,9 @@ status-website:
       <div class="voxli-service"><strong>Voxli Portal</strong> — Aplicação pública de demonstração</div>
     </div>
 
-    [Assinar atualizações no GitHub](https://github.com/djiovani-douglas/voxli-status/issues) · [Assinar via RSS](https://github.com/djiovani-douglas/voxli-status/issues.atom)
-  favicon: https://status.voxli.com.br/assets/favicon.ico
-  faviconSvg: https://status.voxli.com.br/assets/favicon.svg
-  logoUrl: https://status.voxli.com.br/assets/logo.svg
+  favicon: https://raw.githubusercontent.com/djiovani-douglas/voxli-status/HEAD/assets/favicon.ico
+  faviconSvg: https://raw.githubusercontent.com/djiovani-douglas/voxli-status/HEAD/assets/favicon.svg
+  logoUrl: https://raw.githubusercontent.com/djiovani-douglas/voxli-status/HEAD/assets/logo.svg
   navbar:
     - title: Status
       href: /
@@ -193,28 +192,39 @@ status-website:
 
     /* Faixa de confiança e serviços monitorados (introMessage) */
     .voxli-trust-band {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem 1.5rem;
-      margin: 1rem 0;
-      padding: 0.9rem 1.1rem;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.6rem;
+      margin: 1.1rem 0;
+      padding: 1rem 1.1rem;
       background: var(--card-background-color);
       border: 1px solid var(--voxli-border);
       border-radius: 12px;
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       color: var(--voxli-muted);
+      text-align: center;
     }
+    .voxli-trust-item {
+      padding: 0.35rem 0.5rem;
+      border-left: 1px solid var(--voxli-border);
+    }
+    .voxli-trust-item:first-child { border-left: none; }
     .voxli-services {
       display: grid;
-      gap: 0.4rem;
+      gap: 0.55rem;
       margin: 0 0 1.1rem;
-      padding: 0.9rem 1.1rem;
+      padding: 1rem 1.1rem;
       background: var(--card-background-color);
       border: 1px solid var(--voxli-border);
       border-radius: 12px;
       font-size: 0.88rem;
     }
     .voxli-service strong { color: var(--voxli-navy); }
+
+    @media (max-width: 640px) {
+      .voxli-trust-band { grid-template-columns: 1fr; text-align: left; }
+      .voxli-trust-item { border-left: none; padding: 0.15rem 0; }
+    }
 
     /* Cartão de estatísticas ao vivo (inserido via JS, com fallback gracioso) */
     .voxli-live-stats {
@@ -278,13 +288,15 @@ status-website:
       font-size: 0.85rem;
     }
 
-    /* Linha do tempo do incidente — cada atualização vira um nó conectado */
-    section > article {
+    /* Linha do tempo dentro da página de UM incidente (comments/updates da mesma issue).
+       Escopo restrito a .incident, pra não conectar visualmente itens da lista
+       "Past Incidents" na home, que são incidentes diferentes e não uma sequência. */
+    .incident section > article {
       position: relative;
       margin-left: 1.4rem;
       padding-left: 1.2rem !important;
     }
-    section > article::before {
+    .incident section > article::before {
       content: "";
       position: absolute;
       left: -1.4rem;
@@ -294,7 +306,7 @@ status-website:
       border-radius: 50%;
       background: var(--voxli-navy);
     }
-    section > article::after {
+    .incident section > article::after {
       content: "";
       position: absolute;
       left: calc(-1.4rem + 4px);
@@ -303,50 +315,50 @@ status-website:
       width: 2px;
       background: var(--voxli-border);
     }
-    section > article:last-child::after { display: none; }
+    .incident section > article:last-child::after { display: none; }
 
     footer, .footer { opacity: 0.6; font-size: 0.8rem; }
     .voxli-footer-links { text-align: center; padding: 0.5rem 0 1.5rem; font-size: 0.8rem; }
     .voxli-footer-links a { color: var(--voxli-navy); text-decoration: underline; }
 
     @media (max-width: 640px) {
-      .voxli-trust-band, .voxli-live-stats { flex-direction: column; gap: 0.6rem; }
+      .voxli-live-stats { flex-direction: column; gap: 0.6rem; }
     }
 
-  i18n:
-    liveStatus: Status em tempo real
-    up: Operacional
-    down: Fora do ar
-    degraded: Degradado
-    allSystemsOperational: Todos os sistemas operacionais ✅
-    degradedPerformance: Desempenho degradado ⚠️
-    completeOutage: Indisponibilidade total 🔴
-    partialOutage: Indisponibilidade parcial 🟠
-    duration24H: 24h
-    duration7D: 7d
-    duration30D: 30d
-    duration1Y: 1a
-    durationAll: tudo
-    overallUptime: "Uptime geral: $UPTIME"
-    overallUptimeTitle: Uptime geral
-    averageResponseTime: "Tempo médio de resposta: $TIME"
-    averageResponseTimeTitle: Tempo médio de resposta
-    ms: ms
-    uptime: Disponibilidade
-    uptimeDay: Disponibilidade (24h)
-    uptimeWeek: Disponibilidade (7 dias)
-    uptimeMonth: Disponibilidade (30 dias)
-    uptimeYear: Disponibilidade (1 ano)
-    responseTime: Tempo de resposta
-    responseTimeDay: Tempo de resposta (24h)
-    responseTimeWeek: Tempo de resposta (7 dias)
-    responseTimeMonth: Tempo de resposta (30 dias)
-    responseTimeYear: Tempo de resposta (1 ano)
-    responseTimeGraphAlt: Gráfico de tempo de resposta
-    status: Status
-    history: Histórico
-    url: URL
-    pastIncidents: Incidentes anteriores
-    pastIncidentsResolved: "Resolvido em $MINUTES minutos com $POSTS posts"
-    incidentReport: "Incidente #$NUMBER — relatório →"
-    footer: "Desenvolvido com [Upptime]($REPO)"
+i18n:
+  liveStatus: Status em tempo real
+  up: Operacional
+  down: Fora do ar
+  degraded: Degradado
+  allSystemsOperational: Todos os sistemas operacionais ✅
+  degradedPerformance: Desempenho degradado ⚠️
+  completeOutage: Indisponibilidade total 🔴
+  partialOutage: Indisponibilidade parcial 🟠
+  duration24H: 24h
+  duration7D: 7d
+  duration30D: 30d
+  duration1Y: 1a
+  durationAll: tudo
+  overallUptime: "Uptime geral: $UPTIME"
+  overallUptimeTitle: Uptime geral
+  averageResponseTime: "Tempo médio de resposta: $TIME"
+  averageResponseTimeTitle: Tempo médio de resposta
+  ms: ms
+  uptime: Disponibilidade
+  uptimeDay: Disponibilidade (24h)
+  uptimeWeek: Disponibilidade (7 dias)
+  uptimeMonth: Disponibilidade (30 dias)
+  uptimeYear: Disponibilidade (1 ano)
+  responseTime: Tempo de resposta
+  responseTimeDay: Tempo de resposta (24h)
+  responseTimeWeek: Tempo de resposta (7 dias)
+  responseTimeMonth: Tempo de resposta (30 dias)
+  responseTimeYear: Tempo de resposta (1 ano)
+  responseTimeGraphAlt: Gráfico de tempo de resposta
+  status: Status
+  history: Histórico
+  url: URL
+  pastIncidents: Incidentes anteriores
+  pastIncidentsResolved: "Resolvido em $MINUTES minutos com $POSTS posts"
+  incidentReport: "Incidente #$NUMBER — relatório →"
+  footer: "Desenvolvido com [Upptime]($REPO)"
